@@ -37,16 +37,26 @@ class Horario:
 		self.horario = horario
 		self.cor = str(dia) + "/" + str(horario)
 	
-	def add(self, horarioMax):
-		if(self.dia < 5):
-			self.dia += 1
-		elif(self.horario < horarioMax):
-			self.horario += 1
+	def __setattr__(self, name, value):
+		if(name == "cor"):
+			super().__setattr__(name, value)
+			aux = value.split("/")
+			self.dia = int(aux[0])
+			self.horario = int(aux[1])
 		else:
-			self.dia = -1
-			self.horario = -1
+			super().__setattr__(name, value)
 			
-
+	def add(self, horarioMax):
+		if(self.dia in range(4)):
+			self.dia += 1
+		#elif(self.horario in range((horarioMax)-1)):
+		#	self.dia = 0
+		#	self.horario += 1
+		else:
+			self.dia = 0
+			self.horario += 1
+		self.cor = str(self.dia) + "/" + str(self.horario)
+			
 # Classe Vertice, esta inicializa um vértice do grafo, possui um iD, sua cor obtida da classe Horario
 # e a sua lista de adjacência. É a classe mais genérica utilizada para instanciação de 'vértices de 
 # restrição', utilizados na parte de restrições do projeto
@@ -54,6 +64,7 @@ class Horario:
 class Vertice:
 	idVertice = 0
 	def __init__(self):
+		self.saturacao = 0
 		self.horario = Horario(-1, -1)
 		self.adjacencia = []
 		self.idVertice = Vertice.idVertice
@@ -118,10 +129,6 @@ class MTP(Vertice):
 class Escola:
 	
 	def __init__(self, escola):
-		self.idVertice = 0
-		self.idProfessor = 0
-		self.idTurma = 0
-		self.idMateria = 0
 		self.Vertices = []			#Lista contendo todos os vértices, Genéricos ou MTPs
 		self.Configuracoes = []		#Lista contendo todos os horários da escola
 		self.Materias = []			#Lista contendo todas as matérias cadastradas
@@ -135,13 +142,35 @@ class Escola:
 		self.criaListaAdj()
 		self.addRestricao()
 		self.addPreferencias()
-		print(self.numPrefs, "/", self.numPrefAtendidas, "/", len(self.Preferencias))
 		self.colorir()
+		'''for v in self.MTPs:
+			print("idVertice", self.Vertices[v].idVertice)
+			print("Horario", self.Vertices[v].horario.dia,"/",self.Vertices[v].horario.horario)'''
+		print(self.contaCor())
+		'''for v in self.MTPs:
+			if(self.Vertices[v].horario.cor == "-10/-10"):
+				print("idVertice: ", self.Vertices[v].idVertice)
+				for adj in self.Vertices[v].adjacencia:
+					if(isinstance(self.Vertices[adj], MTP)):
+						print("Materia: ", self.Materias[self.Vertices[adj].idMateria].nome, "Turma: ", self.Turmas[self.Vertices[adj].idTurma].nome, "Professor: ", self.Professores[self.Vertices[adj].idProfessor].nome, "Cor: ", self.Vertices[adj].horario.cor)
+					else:
+						print("Restricao cor: ", self.Vertices[v].horario.cor)'''
+		'''for t in self.Turmas:
+			print("Turma ", t.nome)
+			for r in t.restricao:
+				print(r)'''
 		
 	# O seguinte método cria as listas de adjacências de cada vértice(MTP), verificando com 2
 	# laços de repetição se o seu par possui alguma turma em comum ou algum professor em comum
 	# fazendo com que estes não possam ser pintados com a mesma cor, adicionando-os em suas 
 	# respectivas listas de adjacências 
+
+	def contaCor(self):
+		cores = []
+		for v in self.MTPs:
+			if(self.Vertices[v].horario.cor not in cores):
+				cores.append(self.Vertices[v].horario.cor)
+		return len(cores)
 
 	def criaListaAdj(self):
 		for idV1 in self.MTPs:
@@ -156,14 +185,23 @@ class Escola:
 
 	def addRestricao(self):
 		for idV in self.MTPs:
+			#print("MTP", "Materia: ", self.Materias[self.Vertices[idV].idMateria].nome, "Turma: ", self.Turmas[self.Vertices[idV].idTurma].nome, "Professor: ", self.Professores[self.Vertices[idV].idProfessor].nome)
 			for t in self.Turmas:
 				if(self.Vertices[idV].idTurma == t.idTurma):
+					#print("Turma: ", t.nome)
 					for restricao in t.restricao:
-						self.Vertices[idV].adjacencia.append(restricao)
+						#print("Cor: ", self.Vertices[restricao].horario.cor)
+						self.Vertices[idV].adjacencia.append(self.Vertices[restricao].idVertice)
 			for p in self.Professores:
+				#print("Professor: ", p.nome)
 				if(self.Vertices[idV].idProfessor == p.idProfessor):
 					for restricao in p.restricao:
-						self.Vertices[idV].adjacencia.append(restricao)	
+						#print("Cor: ", self.Vertices[restricao].horario.cor)
+						self.Vertices[idV].adjacencia.append(self.Vertices[restricao].idVertice)
+
+	# Nesse método, todas as preferências, de todos os professores, são alocadas
+	# Caso uma preferência seja possível, o vértice MTP correspondente será pintado
+	# Caso não seja, ela é alocada numa lista de preferências não atendidas
 
 	def addPreferencias(self):
 		numProfs = len(self.Professores)
@@ -190,29 +228,70 @@ class Escola:
 							else:
 								if(pref not in self.Preferencias):
 									self.Preferencias.append(pref)
-				
-	def colorir(self):
-		listAdj = []
-		listSat = []
-		sizeVer = len(self.MTPs)
-		for v in self.MTPs:
-			grau = (self.Vertices[v].adjacencia, 0)
-			listAdj.append(grau)
-		for i in range(sizeVer):
-			maxAdj = 
+	
+	# Esse método tentará todas as combinações de cores possíveis para um vértice
+	# parando apenas quando uma for aceita
+	
+	def escolheCor(self, vertice):
+		#print(vertice.idVertice)
+		#print(vertice.horario.cor)
+		horario = Horario(0, 0)
+		maxHorario = len(self.Configuracoes)
+		while(not self.recebeCor(vertice, horario.cor)):
+			horario.add(maxHorario)
+		#print(vertice.horario.cor)
+		if(vertice.horario.cor != "-1/-1"):
+			return True
+		return False
 			
+	def colorir(self):
+		listNoColor = []
+		for v in self.MTPs:
+			#print(self.Vertices[v].horario.cor)
+			if(self.Vertices[v].horario.cor == "-1/-1"):
+				#print("Entrou")
+				listNoColor.append(self.Vertices[v].idVertice)
+		while(len(listNoColor) > 0):
+			maxGrau = -1
+			maxSat = -1
+			index = -1
+			for v1 in listNoColor:
+				if(index == -1):
+					index = v1
+					maxGrau = len(self.Vertices[v1].adjacencia)
+					maxSat = self.Vertices[v1].saturacao
+				elif(maxGrau < len(self.Vertices[v1].adjacencia)):
+					index = v1
+					maxGrau = len(self.Vertices[v1].adjacencia)
+					maxSat = self.Vertices[v1].saturacao
+				elif(maxGrau == len(self.Vertices[v1].adjacencia) and maxSat < self.Vertices[v1].saturacao):
+					index = v1
+					maxGrau = len(self.Vertices[v1].adjacencia)
+					maxSat = self.Vertices[v1].saturacao
+			self.escolheCor(self.Vertices[index])
+			listNoColor.remove(self.Vertices[index].idVertice)
+			for adj in self.Vertices[index].adjacencia:
+				self.Vertices[adj].saturacao += 1
+						
 	# Todo o método a seguir foi feito para puxar os dados da planilha fornecida com os dados
 	# e possibilitar a manipulação e testes do problema através desses, a biblioteca utilizada
 	# para isso foi a xlrd
 
 	def leDoArquivo(self, escola):
-		# Abre o arquivo
+		
+		# Zera os ids
+		
 		Vertice.idVertice = 0
 		MTP.idMTP = 0
 		Professor.idProfessor = 0
 		Turma.idTurma = 0
 		Professor.idProfessor = 0
+		
+		# Abre o arquivo
+		
 		wb = xlrd.open_workbook(escola)
+		
+		# Abre a planilha 0, Dados
 		ws = wb.sheet_by_index(0)
 		for i in range(ws.nrows):
 			# Ignora linha de cabeçalho
@@ -272,7 +351,7 @@ class Escola:
 					self.Vertices.append(mtp)
 					self.MTPs.append(mtp.idVertice)
 		
-		# Obtém os dados da Planilha Configuracoes
+		# Abre a planilha 1, Configurações
 				
 		ws = wb.sheet_by_index(1)
 		for i in range(ws.nrows):
@@ -280,6 +359,8 @@ class Escola:
 				continue
 			else:
 				self.Configuracoes.append(ws.cell(i, 0).value)
+
+		# Abre a planilha 2, Restrição
 
 		ws = wb.sheet_by_index(2)
 		for i in range(ws.nrows):
@@ -290,10 +371,12 @@ class Escola:
 				for p in self.Professores:
 					if(p.nome == professor):
 						v = Vertice()
-						v.horario = Horario(getDia(ws.cell(i, 2).value), getHorario(ws.cell(i, 1).value, self.Configuracoes))
+						v.horario.cor =  str(getDia(ws.cell(i, 2).value)) + "/" +  str(getHorario(ws.cell(i, 1).value, self.Configuracoes))
 						self.Vertices.append(v)
 						p.restricao.append(v.idVertice)
 						break
+
+		# Abre a planilha 3, Restrições_Turma
 
 		ws = wb.sheet_by_index(3)
 		for i in range(ws.nrows):
@@ -304,10 +387,12 @@ class Escola:
 				for t in self.Turmas:
 					if(t.nome == turma):
 						v = Vertice()
-						v.horario = Horario(getDia(ws.cell(i, 2).value), getHorario(ws.cell(i, 1).value, self.Configuracoes))
+						v.horario.cor =  str(getDia(ws.cell(i, 2).value)) + "/" +  str(getHorario(ws.cell(i, 1).value, self.Configuracoes))
 						self.Vertices.append(v)
 						t.restricao.append(v.idVertice)
 						break
+
+		# Abre a planilha 4, Preferências
 
 		ws = wb.sheet_by_index(4)
 		for i in range(ws.nrows):
@@ -321,20 +406,17 @@ class Escola:
 						p.preferencia.append(h)
 						self.numPrefs += 1
 						break
+	
+	# Dado um vértice qualquer e uma cor, essa função tenta alocar essa cor ao vértice
+	# Em caso positivo, a cor é definida e o retorno é True, em caso Negativo o retorno e False
 						
 	def recebeCor(self, vertice, cor):
-		for a in vertice.adjacencia:
-			if(self.Vertices[a].horario.cor == cor):
-				return False
+		if(cor != "-1/-1" and cor != "-10/-10"):
+			for a in vertice.adjacencia:
+				if(self.Vertices[a].horario.cor == cor):
+					return False
 		vertice.horario.cor = cor
 		return True
-		
-	def escolheCor(self, vertice):
-		horario = Horario(0, 0)
-		while(!recebeCor(vertice, horario)):
-			horario.add(len(Configuracoes))
-
-	
 
 a = Escola("Escola_A.xlsx")
 b = Escola("Escola_B.xlsx")
