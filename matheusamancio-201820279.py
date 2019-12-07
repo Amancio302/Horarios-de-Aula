@@ -16,7 +16,7 @@ def getDia(dia):
 	elif(dia == "Sexta"):
 		dia = 4
 	else:
-		dia = -1
+		dia = -10
 	return dia
 
 #Função que busca a configuração dos horários na planilha e retorna valores de 0 a n
@@ -26,7 +26,7 @@ def getHorario(horario, Configuracoes):
 	for i in range(len(Configuracoes)):
 		if(horario == Configuracoes[i]):
 			return i
-	return -1
+	return -10
 
 # Classe horário, que possui os atributos "dia", "horário" e "cor", classe que verifica a validade
 # dos dados que estão entrando e atribui uma união de strings para determinar a cor
@@ -49,12 +49,12 @@ class Horario:
 	def add(self, horarioMax):
 		if(self.dia in range(4)):
 			self.dia += 1
-		#elif(self.horario in range((horarioMax)-1)):
-		#	self.dia = 0
-		#	self.horario += 1
-		else:
+		elif(self.horario in range((horarioMax)-1)):
 			self.dia = 0
 			self.horario += 1
+		else:
+			self.dia = -10
+			self.horario = -10
 		self.cor = str(self.dia) + "/" + str(self.horario)
 			
 # Classe Vertice, esta inicializa um vértice do grafo, possui um iD, sua cor obtida da classe Horario
@@ -138,37 +138,34 @@ class Escola:
 		self.Preferencias = []		#Lista contendo as preferências não atendidas
 		self.numPrefs = 0			#Variável que controla a quantidade total de preferências de professores
 		self.numPrefAtendidas = 0	#Variável que controla a quantidade total de preferências atendidas
+		self.semCor = 0
 		self.leDoArquivo(escola)
 		self.criaListaAdj()
 		self.addRestricao()
 		self.addPreferencias()
 		self.colorir()
-		'''for v in self.MTPs:
-			print("idVertice", self.Vertices[v].idVertice)
-			print("Horario", self.Vertices[v].horario.dia,"/",self.Vertices[v].horario.horario)'''
-		print(self.contaCor())
-		'''for v in self.MTPs:
-			if(self.Vertices[v].horario.cor == "-10/-10"):
-				print("idVertice: ", self.Vertices[v].idVertice)
-				for adj in self.Vertices[v].adjacencia:
-					if(isinstance(self.Vertices[adj], MTP)):
-						print("Materia: ", self.Materias[self.Vertices[adj].idMateria].nome, "Turma: ", self.Turmas[self.Vertices[adj].idTurma].nome, "Professor: ", self.Professores[self.Vertices[adj].idProfessor].nome, "Cor: ", self.Vertices[adj].horario.cor)
-					else:
-						print("Restricao cor: ", self.Vertices[v].horario.cor)'''
-		'''for t in self.Turmas:
-			print("Turma ", t.nome)
-			for r in t.restricao:
-				print(r)'''
+		self.showValues()
 		
 	# O seguinte método cria as listas de adjacências de cada vértice(MTP), verificando com 2
 	# laços de repetição se o seu par possui alguma turma em comum ou algum professor em comum
 	# fazendo com que estes não possam ser pintados com a mesma cor, adicionando-os em suas 
 	# respectivas listas de adjacências 
-
+	
+	def showValues(self):
+		print("Quantidade de cores:", self.contaCor())
+		print("Vértices não coloridos:", self.semCor)
+		print("Preferências atendidas sobre o total de preferências:", self.numPrefAtendidas, "/", self.numPrefs)
+		for p in self.Professores:
+			if(len(p.preferencia) > 0):
+				print(p.nome, ":", len(p.preferencia))
+		print("")
+	
 	def contaCor(self):
 		cores = []
 		for v in self.MTPs:
-			if(self.Vertices[v].horario.cor not in cores):
+			if(self.Vertices[v].horario.cor == "-10/-10"):
+				self.semCor += 1
+			elif(self.Vertices[v].horario.cor not in cores):
 				cores.append(self.Vertices[v].horario.cor)
 		return len(cores)
 
@@ -417,8 +414,11 @@ class Escola:
 					return False
 		vertice.horario.cor = cor
 		return True
-
+print("Escola A")
 a = Escola("Escola_A.xlsx")
+print("Escola B")
 b = Escola("Escola_B.xlsx")
+print("Escola C")
 c = Escola("Escola_C.xlsx")
+print("Escola D")
 d = Escola("Escola_D.xlsx")
