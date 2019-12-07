@@ -1,6 +1,7 @@
 #coding: utf-8
 import xlrd #biblioteca para ler arquivo xls
 import datetime
+import time
 
 #Função que retorna um valor para cada dia, a partir de uma string com seu nome
 
@@ -158,7 +159,6 @@ class Escola:
 		for p in self.Professores:
 			if(len(p.preferencia) > 0):
 				print(p.nome, ":", len(p.preferencia))
-		print("")
 	
 	def contaCor(self):
 		cores = []
@@ -414,11 +414,28 @@ class Escola:
 					return False
 		vertice.horario.cor = cor
 		return True
+		
+inicio = time.time()
 print("Escola A")
 a = Escola("Escola_A.xlsx")
+fim = time.time()
+print("Tempo de execução:", fim-inicio)
+print("")
+inicio = fim
 print("Escola B")
 b = Escola("Escola_B.xlsx")
+fim = time.time()
+print("Tempo de execução:", fim-inicio)
+print("")
+inicio = fim
 print("Escola C")
 c = Escola("Escola_C.xlsx")
+fim = time.time()
+print("Tempo de execução:", fim-inicio)
+print("")
+inicio = fim
 print("Escola D")
 d = Escola("Escola_D.xlsx")
+fim = time.time()
+print("Tempo de execução:", fim-inicio)
+print("")
